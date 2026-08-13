@@ -536,6 +536,7 @@ export class Game {
     for (const shot of run.playerShots) {
       if (shot.tangent) shot.tangent = advanceGreatCircle(shot, shot.tangent, shot.speed * dt);
       else moveSurface(shot, shot.vx, shot.vy, dt);
+      shot.life -= dt;
       for (const enemy of run.enemies) {
         if (enemy.dead || shot.hitIds.includes(enemy.id)) continue;
         if (distance(shot, enemy) < shot.radius + enemy.radius) {
