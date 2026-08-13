@@ -178,7 +178,7 @@ export class Game {
       player.angle = Math.atan2(movement.y, movement.x);
       const speed = player.speed * (player.dashTime > 0 ? 2.8 : 1);
       player.velocity.x = movement.x * speed;
-      player.velocity.y = movement.y * speed;
+      player.velocity.y = -movement.y * speed;
       moveSurface(player, player.velocity.x, player.velocity.y, dt);
       if (Math.random() < 0.75) this.addTrail(player, player.color, player.dashTime > 0 ? 2 : 1);
     } else {
@@ -374,7 +374,7 @@ export class Game {
       const angle = player.angle + offset;
       const damage = player.damage * (ship.weapon === 'burst' ? 0.88 : 1);
       this.run.playerShots.push({
-        lon: player.lon, lat: player.lat, vx: Math.cos(angle) * player.shotSpeed, vy: Math.sin(angle) * player.shotSpeed,
+        lon: player.lon, lat: player.lat, vx: Math.cos(angle) * player.shotSpeed, vy: -Math.sin(angle) * player.shotSpeed,
         damage, radius: ship.weapon === 'lance' ? 0.024 : 0.014, life: ship.weapon === 'lance' ? 1.6 : 1.2,
         color: player.color, pierce: run.mods.pierce + (ship.weapon === 'lance' ? 2 : 0), ricochet: run.stats.ricochet ? 1 : 0, kind: 'shot', hitIds: [],
       });

@@ -5,6 +5,7 @@
 - Repository initialized; research/design milestone committed (`c7eedc9`).
 - Full game implementation and production verification are complete: four sectors, bosses, enemy families, ships, Foundry nodes, Signal levels, effects, and persistence paths are shipping.
 - Production-preview fresh-state test confirmed the core death-to-Foundry loop and a persisted five-hull follow-up run with zero captured runtime errors.
+- Surface latitude is opposite screen Y; player movement and player-shot velocity therefore negate screen Y before travelling across the globe. Keyboard and Gamepad up now move/shoot toward the globe's visible north.
 
 ## Decisions
 
@@ -23,6 +24,7 @@
 - Heavy scene measurement: 150 active enemies plus 620 particles sustained 16.67 ms average / 16.8 ms worst animation-frame intervals in headless Chrome.
 - Scripted Sector 1 all-kill economy simulation yields 167 Stardust, within the documented 140–180 first-boss target.
 - Production preview (`vite preview`) fresh-save pass: no external runtime resources, title-to-run control exercise, pause/resume, immediate hull breach, 20 Stardust recovery, Hull I purchase, reload, and a 5-max-hull follow-up run all passed with no captured runtime errors.
+- Control regression: browser input reproduction confirmed W/mouse-up and Gamepad-up now produce positive surface latitude and positive projectile latitude velocity; S/mouse-down produce the inverse. No captured runtime errors.
 
 ## Next steps
 
