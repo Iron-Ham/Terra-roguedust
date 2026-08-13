@@ -45,6 +45,121 @@ function surfaceVector(point) {
 function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
 
+function vectorLength(vector) {
+  return Math.hypot(vector[0], vector[1], vector[2]);
+}
+
+function normalizeVector(vector) {
+  const length = vectorLength(vector) || 1;
+  return [vector[0] / length, vector[1] / length, vector[2] / length];
+}
+
+function pointFromVector(vector) {
+  return {
+    lon: Math.atan2(vector[0], vector[2]),
+    lat: Math.asin(clamp(vector[1], -1, 1)),
+  };
+}
+
+function cameraFrame(player) {
+  const forward = surfaceVector(player);
+  const candidate = player.cameraRight || [Math.cos(player.lon), 0, -Math.sin(player.lon)];
+  const alignment = dot(candidate, forward);
+  let right = [
+    candidate[0] - forward[0] * alignment,
+    candidate[1] - forward[1] * alignment,
+    candidate[2] - forward[2] * alignment,
+  ];
+  if (vectorLength(right) < 0.001) {
+    const reference = Math.abs(forward[1]) < 0.95 ? [0, 1, 0] : [1, 0, 0];
+    right = cross(reference, forward);
+  }
+  right = normalizeVector(right);
+  return { forward, right, up: normalizeVector(cross(forward, right)) };
+}
+
+function screenTangent(player, x, y) {
+  const { right, up } = cameraFrame(player);
+  return normalizeVector([
+    right[0] * x - up[0] * y,
+    right[1] * x - up[1] * y,
+    right[2] * x - up[2] * y,
+  ]);
+}
+
+function advanceGreatCircle(entity, tangent, distance) {
+  const forward = surfaceVector(entity);
+  const alignment = dot(tangent, forward);
+  const direction = normalizeVector([
+    tangent[0] - forward[0] * alignment,
+    tangent[1] - forward[1] * alignment,
+    tangent[2] - forward[2] * alignment,
+  ]);
+  const cosine = Math.cos(distance);
+  const sine = Math.sin(distance);
+  const nextPosition = [
+    forward[0] * cosine + direction[0] * sine,
+    forward[1] * cosine + direction[1] * sine,
+    forward[2] * cosine + direction[2] * sine,
+  ];
+  Object.assign(entity, pointFromVector(nextPosition));
+  return normalizeVector([
+    direction[0] * cosine - forward[0] * sine,
+    direction[1] * cosine - forward[1] * sine,
+    direction[2] * cosine - forward[2] * sine,
+  ]);
+}
+
+function movePlayer(player, screenX, screenY, dt) {
+  const speed = Math.hypot(screenX, screenY);
+  if (!speed) return;
+  const frame = cameraFrame(player);
+  const direction = screenTangent(player, screenX, screenY);
+  const distance = speed * dt;
+  const axis = normalizeVector(cross(frame.forward, direction));
+  const cosine = Math.cos(distance);
+  const sine = Math.sin(distance);
+  const rightAlignment = dot(axis, frame.right);
+  const rotatedRight = [
+    frame.right[0] * cosine + cross(axis, frame.right)[0] * sine + axis[0] * rightAlignment * (1 - cosine),
+    frame.right[1] * cosine + cross(axis, frame.right)[1] * sine + axis[1] * rightAlignment * (1 - cosine),
+    frame.right[2] * cosine + cross(axis, frame.right)[2] * sine + axis[2] * rightAlignment * (1 - cosine),
+  ];
+  advanceGreatCircle(player, direction, distance);
+  const nextForward = surfaceVector(player);
+  const alignment = dot(rotatedRight, nextForward);
+  player.cameraRight = normalizeVector([
+    rotatedRight[0] - nextForward[0] * alignment,
+    rotatedRight[1] - nextForward[1] * alignment,
+    rotatedRight[2] - nextForward[2] * alignment,
+  ]);
+}
+
+function tangentTowards(from, to) {
+  const source = surfaceVector(from);
+  const target = surfaceVector(to);
+  const alignment = dot(source, target);
+  return normalizeVector([
+    target[0] - source[0] * alignment,
+    target[1] - source[1] * alignment,
+    target[2] - source[2] * alignment,
+  ]);
+}
+
+function localTangent(point, east, north) {
+  const eastVector = [Math.cos(point.lon), 0, -Math.sin(point.lon)];
+  const northVector = [
+    -Math.sin(point.lat) * Math.sin(point.lon),
+    Math.cos(point.lat),
+    -Math.sin(point.lat) * Math.cos(point.lon),
+  ];
+  return normalizeVector([
+    eastVector[0] * east + northVector[0] * north,
+    eastVector[1] * east + northVector[1] * north,
+    eastVector[2] * east + northVector[2] * north,
+  ]);
+}
+
 function playerStats(save, ship) {
   const meta = getMeta(save);
   return {
@@ -113,7 +228,7 @@ export class Game {
     const player = {
       lon: 0, lat: 0, hull: stats.maxHull, maxHull: stats.maxHull, speed: stats.speed,
       fireRate: stats.fireRate, damage: stats.damage, shotSpeed: stats.shotSpeed, magnet: stats.magnet,
-      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2, dash: stats.dash, phase: stats.phase,
+      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2, cameraRight: [1, 0, 0], dash: stats.dash, phase: stats.phase,
       fireCooldown: 0, dashCooldown: 0, dashTime: 0, invulnerable: 0, hitFlash: 0,
       velocity: { x: 0, y: 0 }, charge: 0,
     };
@@ -189,8 +304,8 @@ export class Game {
       player.angle = Math.atan2(movement.y, movement.x);
       const speed = player.speed * (player.dashTime > 0 ? 2.8 : 1);
       player.velocity.x = movement.x * speed;
-      player.velocity.y = -movement.y * speed;
-      moveSurface(player, player.velocity.x, player.velocity.y, dt);
+      player.velocity.y = movement.y * speed;
+      movePlayer(player, player.velocity.x, player.velocity.y, dt);
       if (Math.random() < 0.75) this.addTrail(player, player.color, player.dashTime > 0 ? 2 : 1);
     } else {
       player.velocity.x *= Math.pow(0.0001, dt);
@@ -369,7 +484,8 @@ export class Game {
   }
 
   spawnEnemyShot(origin, vx, vy, damage, color, radius = 0.015, life = 4) {
-    this.run.enemyShots.push({ lon: origin.lon, lat: origin.lat, vx, vy, damage, color, radius, life, kind: 'shot' });
+    const speed = Math.hypot(vx, vy);
+    this.run.enemyShots.push({ lon: origin.lon, lat: origin.lat, tangent: localTangent(origin, vx, vy), speed, damage, color, radius, life, kind: 'shot' });
   }
 
   firePlayer() {
@@ -384,7 +500,7 @@ export class Game {
       const angle = player.angle + offset;
       const damage = player.damage * (ship.weapon === 'burst' ? 0.88 : 1);
       this.run.playerShots.push({
-        lon: player.lon, lat: player.lat, vx: Math.cos(angle) * player.shotSpeed, vy: -Math.sin(angle) * player.shotSpeed,
+        lon: player.lon, lat: player.lat, tangent: screenTangent(player, Math.cos(angle), Math.sin(angle)), speed: player.shotSpeed,
         damage, radius: ship.weapon === 'lance' ? 0.024 : 0.014, life: ship.weapon === 'lance' ? 1.6 : 1.2,
         color: player.color, pierce: run.mods.pierce + (ship.weapon === 'lance' ? 2 : 0), ricochet: run.stats.ricochet ? 1 : 0, kind: 'shot', hitIds: [],
       });
@@ -410,7 +526,7 @@ export class Game {
       player.charge = 0;
       for (let index = 0; index < 18; index += 1) {
         const angle = index / 18 * TAU;
-        this.run.playerShots.push({ lon: player.lon, lat: player.lat, vx: Math.cos(angle) * 1.0, vy: Math.sin(angle) * 1.0, damage: player.damage * 1.6, radius: 0.025, life: 0.7, color: PALETTE.gold, pierce: 3, kind: 'nova', hitIds: [] });
+        this.run.playerShots.push({ lon: player.lon, lat: player.lat, tangent: screenTangent(player, Math.cos(angle), Math.sin(angle)), speed: 1, damage: player.damage * 1.6, radius: 0.025, life: 0.7, color: PALETTE.gold, pierce: 3, kind: 'nova', hitIds: [] });
       }
     }
   }
@@ -418,8 +534,8 @@ export class Game {
   updateShots(dt) {
     const run = this.run;
     for (const shot of run.playerShots) {
-      moveSurface(shot, shot.vx, shot.vy, dt);
-      shot.life -= dt;
+      if (shot.tangent) shot.tangent = advanceGreatCircle(shot, shot.tangent, shot.speed * dt);
+      else moveSurface(shot, shot.vx, shot.vy, dt);
       for (const enemy of run.enemies) {
         if (enemy.dead || shot.hitIds.includes(enemy.id)) continue;
         if (distance(shot, enemy) < shot.radius + enemy.radius) {
@@ -430,10 +546,8 @@ export class Game {
             shot.ricochet -= 1;
             const target = run.enemies.find(candidate => candidate !== enemy && !candidate.dead && !shot.hitIds.includes(candidate.id));
             if (target) {
-              const bounce = direction(shot, target);
-              const speed = Math.hypot(shot.vx, shot.vy);
-              shot.vx = bounce.x * speed;
-              shot.vy = bounce.y * speed;
+              shot.tangent = tangentTowards(shot, target);
+              shot.speed = shot.speed || Math.hypot(shot.vx, shot.vy);
               shot.life = Math.max(shot.life, 0.14);
             } else if (shot.pierce < 0) shot.life = 0;
           } else if (shot.pierce < 0) shot.life = 0;
@@ -447,7 +561,7 @@ export class Game {
       }
     }
     for (const shot of run.enemyShots) {
-      moveSurface(shot, shot.vx, shot.vy, dt);
+      shot.tangent = advanceGreatCircle(shot, shot.tangent, shot.speed * dt);
       shot.life -= dt;
       if (distance(shot, run.player) < shot.radius + run.player.radius) {
         this.damagePlayer(shot.damage, shot);
@@ -776,9 +890,7 @@ export class Game {
 
   project(point) {
     const player = this.run?.player || { lon: this.time * 0.04, lat: Math.sin(this.time * 0.03) * 0.1 };
-    const forward = surfaceVector(player);
-    const right = [Math.cos(player.lon), 0, -Math.sin(player.lon)];
-    const up = cross(forward, right);
+    const { forward, right, up } = cameraFrame(player);
     const vector = surfaceVector(point);
     const x = dot(vector, right);
     const y = -dot(vector, up);
@@ -841,23 +953,44 @@ export class Game {
     ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, radius, 0, TAU); ctx.clip();
     ctx.fillStyle = gradient; ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-    ctx.strokeStyle = `${color}30`; ctx.lineWidth = 1.2 * this.dpr;
-    for (let index = -4; index <= 4; index += 1) {
-      const y = cy + index * radius * 0.19;
-      ctx.beginPath(); ctx.ellipse(cx, y, radius, radius * (0.22 + Math.abs(index) * 0.025), 0, 0, TAU); ctx.stroke();
-    }
-    for (let index = -3; index <= 3; index += 1) {
-      ctx.beginPath(); ctx.ellipse(cx + index * radius * 0.23, cy, radius * (0.20 + Math.abs(index) * 0.06), radius, 0, 0, TAU); ctx.stroke();
-    }
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = color;
-    for (let index = 0; index < 16; index += 1) {
-      const angle = this.time * 0.1 + index * 2.4;
-      ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * radius * 0.62, cy + Math.sin(angle * 1.3) * radius * 0.52, radius * 0.025, 0, TAU); ctx.fill();
-    }
+    if (run) this.drawSurfaceGrid(ctx, color);
     ctx.restore();
     ctx.beginPath(); ctx.arc(cx, cy, radius, 0, TAU); ctx.strokeStyle = `${color}b3`; ctx.lineWidth = 1.4 * this.dpr; ctx.stroke();
     ctx.beginPath(); ctx.arc(cx, cy, radius + 6 * this.dpr, 0, TAU); ctx.strokeStyle = `${color}28`; ctx.lineWidth = 4 * this.dpr; ctx.stroke();
+  }
+
+  drawSurfaceGrid(ctx, color) {
+    ctx.strokeStyle = `${color}30`;
+    ctx.lineWidth = 1.2 * this.dpr;
+
+    const trace = (samples) => {
+      let drawing = false;
+      ctx.beginPath();
+      for (const point of samples) {
+        const projected = this.project(point);
+        if (projected.z <= 0.015) {
+          drawing = false;
+          continue;
+        }
+        if (drawing) ctx.lineTo(projected.x, projected.y);
+        else {
+          ctx.moveTo(projected.x, projected.y);
+          drawing = true;
+        }
+      }
+      ctx.stroke();
+    };
+
+    for (let latitude = -1.2; latitude <= 1.2; latitude += 0.4) {
+      const samples = [];
+      for (let index = 0; index <= 48; index += 1) samples.push({ lon: -Math.PI + index / 48 * TAU, lat: latitude });
+      trace(samples);
+    }
+    for (let longitude = -Math.PI; longitude < Math.PI; longitude += Math.PI / 6) {
+      const samples = [];
+      for (let index = 0; index <= 36; index += 1) samples.push({ lon: longitude, lat: -Math.PI / 2 + index / 36 * Math.PI });
+      trace(samples);
+    }
   }
 
   drawAttract(ctx) {

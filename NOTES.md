@@ -7,6 +7,7 @@
 - Production-preview fresh-state test confirmed the core death-to-Foundry loop and a persisted five-hull follow-up run with zero captured runtime errors.
 - Surface latitude is opposite screen Y; player movement and player-shot velocity therefore negate screen Y before travelling across the globe. Keyboard and Gamepad up now move/shoot toward the globe's visible north.
 - Globe traversal has no polar clamp: player, bullets, pickups, and enemies keep travelling across the sphere rather than sticking to an artificial latitude boundary.
+- Player traversal now follows a camera-relative tangent frame that is parallel-transported over the sphere. Movement distance is latitude-invariant, aim remains screen-relative, and the surface grid is projected from that moving frame.
 
 ## Decisions
 
@@ -27,6 +28,7 @@
 - Production preview (`vite preview`) fresh-save pass: no external runtime resources, title-to-run control exercise, pause/resume, immediate hull breach, 20 Stardust recovery, Hull I purchase, reload, and a 5-max-hull follow-up run all passed with no captured runtime errors.
 - Control regression: browser input reproduction confirmed W/mouse-up and Gamepad-up now produce positive surface latitude and positive projectile latitude velocity; S/mouse-down produce the inverse. No captured runtime errors.
 - Traversal regression: a player starting at latitude 1.56 and holding Up crossed the former polar limit to latitude 2.14; an upward projectile advanced from 1.43 to 1.76. Development combat smoke and the production preview completed with no captured runtime errors.
+- Perspective regression: fixed-step diagonal movement traveled 0.3478965 radians at the equator and at latitude 1.5 (difference 3.22e-15). A fixed world marker shifted beneath the centered ship; up/right shots remained respectively above/right of the ship near a pole.
 
 ## Next steps
 
