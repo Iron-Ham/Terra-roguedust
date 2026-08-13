@@ -6,6 +6,7 @@
 - Full game implementation and production verification are complete: four sectors, bosses, enemy families, ships, Foundry nodes, Signal levels, effects, and persistence paths are shipping.
 - Production-preview fresh-state test confirmed the core death-to-Foundry loop and a persisted five-hull follow-up run with zero captured runtime errors.
 - Surface latitude is opposite screen Y; player movement and player-shot velocity therefore negate screen Y before travelling across the globe. Keyboard and Gamepad up now move/shoot toward the globe's visible north.
+- Globe traversal has no polar clamp: player, bullets, pickups, and enemies keep travelling across the sphere rather than sticking to an artificial latitude boundary.
 
 ## Decisions
 
@@ -25,6 +26,7 @@
 - Scripted Sector 1 all-kill economy simulation yields 167 Stardust, within the documented 140–180 first-boss target.
 - Production preview (`vite preview`) fresh-save pass: no external runtime resources, title-to-run control exercise, pause/resume, immediate hull breach, 20 Stardust recovery, Hull I purchase, reload, and a 5-max-hull follow-up run all passed with no captured runtime errors.
 - Control regression: browser input reproduction confirmed W/mouse-up and Gamepad-up now produce positive surface latitude and positive projectile latitude velocity; S/mouse-down produce the inverse. No captured runtime errors.
+- Traversal regression: a player starting at latitude 1.56 and holding Up crossed the former polar limit to latitude 2.14; an upward projectile advanced from 1.43 to 1.76. Development combat smoke and the production preview completed with no captured runtime errors.
 
 ## Next steps
 

@@ -8,23 +8,34 @@ const choice = list => list[Math.floor(Math.random() * list.length)];
 const angleDiff = (from, to) => wrap(to - from);
 const shorten = hex => hex;
 
+function surfaceDot(a, b) {
+  return Math.sin(a.lat) * Math.sin(b.lat)
+    + Math.cos(a.lat) * Math.cos(b.lat) * Math.cos(wrap(b.lon - a.lon));
+}
+
 function distance(a, b) {
-  const meanLat = (a.lat + b.lat) * 0.5;
-  const dx = wrap(a.lon - b.lon) * Math.max(0.22, Math.cos(meanLat));
-  const dy = a.lat - b.lat;
-  return Math.hypot(dx, dy);
+  return Math.acos(clamp(surfaceDot(a, b), -1, 1));
 }
 
 function direction(from, to) {
-  const dx = wrap(to.lon - from.lon) * Math.max(0.22, Math.cos((from.lat + to.lat) * 0.5));
-  const dy = to.lat - from.lat;
-  const length = Math.hypot(dx, dy) || 1;
-  return { x: dx / length, y: dy / length, length };
+  const longitudeDelta = wrap(to.lon - from.lon);
+  const targetCosLat = Math.cos(to.lat);
+  const x = targetCosLat * Math.sin(longitudeDelta);
+  const y = Math.cos(from.lat) * Math.sin(to.lat)
+    - Math.sin(from.lat) * targetCosLat * Math.cos(longitudeDelta);
+  const tangentLength = Math.hypot(x, y);
+  return {
+    x: x / (tangentLength || 1),
+    y: y / (tangentLength || 1),
+    length: Math.atan2(tangentLength, surfaceDot(from, to)),
+  };
 }
 
 function moveSurface(entity, x, y, dt) {
-  entity.lon = wrap(entity.lon + (x * dt) / Math.max(0.22, Math.cos(entity.lat)));
-  entity.lat = clamp(entity.lat + y * dt, -1.44, 1.44);
+  const cosLat = Math.cos(entity.lat);
+  const lonScale = Math.sign(cosLat || 1) * Math.max(0.08, Math.abs(cosLat));
+  entity.lon = wrap(entity.lon + (x * dt) / lonScale);
+  entity.lat = wrap(entity.lat + y * dt);
 }
 
 function surfaceVector(point) {
@@ -273,10 +284,9 @@ export class Game {
   }
 
   relativePosition(origin, angle, amount) {
-    return {
-      lon: wrap(origin.lon + (Math.cos(angle) * amount) / Math.max(0.22, Math.cos(origin.lat))),
-      lat: clamp(origin.lat + Math.sin(angle) * amount, -1.43, 1.43),
-    };
+    const position = { lon: origin.lon, lat: origin.lat };
+    moveSurface(position, Math.cos(angle) * amount, Math.sin(angle) * amount, 1);
+    return position;
   }
 
   updateEnemies(dt) {
