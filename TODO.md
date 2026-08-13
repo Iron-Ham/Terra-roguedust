@@ -8,12 +8,12 @@
 
 ## Foundation
 
-- [ ] Scaffold Vite application and production scripts.
-- [ ] Build accessible title, hangar, foundry, settings, and result overlays.
-- [ ] Build localStorage save model and reset path.
-- [ ] Build keyboard/mouse/Gamepad input.
-- [ ] Build WebAudio music, effects, and settings.
-- [ ] Build high-DPI canvas globe renderer, starfield, HUD, and particle pool.
+- [x] Scaffold Vite application and production scripts.
+- [x] Build accessible title, hangar, foundry, settings, and result overlays.
+- [x] Build localStorage save model and reset path.
+- [x] Build keyboard/mouse/Gamepad input.
+- [x] Build WebAudio music, effects, and settings.
+- [x] Build high-DPI canvas globe renderer, starfield, HUD, and particle pool.
 
 ## Gameplay
 

@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Repository initialized.
-- Research complete and design committed in `DESIGN.md`.
-- Next: initialize the Vite/Canvas foundation.
+- Repository initialized; research/design milestone committed (`c7eedc9`).
+- Vite/Canvas foundation, persistent save model, menu shell, keyboard/mouse/Gamepad controls, synthesized audio, and vector renderer are implemented.
+- Gameplay engine is implemented; next is controlled end-to-end content verification, bug fixes, tutorial polish, and production QA.
 
 ## Decisions
 
@@ -17,10 +17,11 @@
 
 ## Verification record
 
-- Pending implementation.
+- `npm run build` succeeds after the foundation build.
+- Development-browser smoke: title screen, launch selection, initial wave, mouse fire, WASD movement, enemy kill, damage feedback, and HUD ran with zero captured runtime errors.
 
 ## Next steps
 
-1. Scaffold Vite project and canvas shell.
-2. Build persistence, input, audio, renderer, and simulation systems.
-3. Exercise the production build through a browser automation playthrough.
+1. Verify every run transition, boon, boss, sector hazard, and ship through browser-driven play.
+2. Add first-run context prompts and resolve discovered interaction defects.
+3. Run the final fresh-save persistence test and production-preview adversarial pass.
