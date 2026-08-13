@@ -17,24 +17,24 @@
 
 ## Gameplay
 
-- [ ] Build spherical positions, movement, aim, collision, projectiles, dash, and pickups.
-- [ ] Implement ship archetypes and their distinct weapon behaviours.
-- [ ] Implement asteroid and eight enemy behaviour families.
-- [ ] Implement four sectors, wave templates, hazards, and boss arrival flow.
-- [ ] Implement four bosses with readable multi-phase attacks.
-- [ ] Implement sparse flux-boon rewards, pause, death, and clear flows.
+- [x] Build spherical positions, movement, aim, collision, projectiles, dash, and pickups.
+- [x] Implement ship archetypes and their distinct weapon behaviours.
+- [x] Implement asteroid and eight enemy behaviour families.
+- [x] Implement four sectors, wave templates, hazards, and boss arrival flow.
+- [x] Implement four bosses with readable multi-phase attacks.
+- [x] Implement sparse flux-boon rewards, pause, death, and clear flows.
 
 ## Progression
 
-- [ ] Implement all Foundry unlock branches and prerequisite reveals.
-- [ ] Implement sector licences, ship unlocks, Signal levels, and run modifiers.
-- [ ] Persist all purchases, run records, settings, selected ship, and unlocked content.
-- [ ] Build first-play tutorial and contextual instruction prompts.
+- [x] Implement all Foundry unlock branches and prerequisite reveals.
+- [x] Implement sector licences, ship unlocks, Signal levels, and run modifiers.
+- [x] Persist all purchases, run records, settings, selected ship, and unlocked content.
+- [x] Build first-play tutorial and contextual instruction prompts.
 
 ## Polish and verification
 
-- [ ] Add visual effects, screen feedback, audio feedback, and reduced-motion support.
-- [ ] Exercise a first-run death -> purchase -> reload -> stronger-run path.
-- [ ] Exercise all unlocks, ships, sectors, bosses, boons, pause, reset, and controller code paths.
+- [x] Add visual effects, screen feedback, audio feedback, and reduced-motion support.
+- [x] Exercise a first-run death -> purchase -> reload -> stronger-run path.
+- [x] Exercise all unlocks, ships, sectors, bosses, boons, pause, reset, and controller code paths.
 - [ ] Run production build and Vite preview with console-error checks.
 - [ ] Review diff/status and commit finished game.

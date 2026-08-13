@@ -102,7 +102,7 @@ export class Game {
     const player = {
       lon: 0, lat: 0, hull: stats.maxHull, maxHull: stats.maxHull, speed: stats.speed,
       fireRate: stats.fireRate, damage: stats.damage, shotSpeed: stats.shotSpeed, magnet: stats.magnet,
-      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2,
+      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2, dash: stats.dash, phase: stats.phase,
       fireCooldown: 0, dashCooldown: 0, dashTime: 0, invulnerable: 0, hitFlash: 0,
       velocity: { x: 0, y: 0 }, charge: 0,
     };
@@ -115,6 +115,11 @@ export class Game {
       boonChoices: [], elapsed: 0, sectorReward: 0, shake: 0, nextHazard: 7,
       seededPhase: Math.random() * TAU,
     };
+    if (!save.seen.tutorial) {
+      this.run.announcements.push({ text: 'FIRST ORBIT', sub: 'WASD steers the globe. Aim and hold fire. Movement is survival.', life: 3.5, max: 3.5, color: PALETTE.gold });
+      save.seen.tutorial = true;
+      this.hooks.onTutorial?.();
+    }
     this.state = 'playing';
     this.audio.unlock();
     this.hooks.onStart?.(this.run);
@@ -141,6 +146,7 @@ export class Game {
     const boon = this.run.boonChoices.find(item => item.id === id);
     if (!boon) return;
     boon.apply(this.run);
+    (this.run.boons ??= []).push(boon.id);
     this.run.announcements.push({ text: boon.name, sub: boon.detail, life: 1.7, max: 1.7, color: PALETTE.mint });
     this.addScreenBurst(this.width / 2, this.height / 2, PALETTE.mint, 24, 1);
     this.audio.event('boon');
@@ -228,7 +234,7 @@ export class Game {
       const adjusted = Math.ceil(count * (1 + (run.sector.id - 1) * 0.15 + run.signal * 0.08));
       for (let i = 0; i < adjusted; i += 1) this.spawnEnemy(type, i * 0.07 + Math.random() * 0.4);
     }
-    run.sectorReward += run.sector.baseReward + wave * 3;
+    run.sectorReward += wave === 1 ? run.sector.baseReward : 1;
   }
 
   waveTypes(sectorId) {
@@ -370,7 +376,7 @@ export class Game {
       this.run.playerShots.push({
         lon: player.lon, lat: player.lat, vx: Math.cos(angle) * player.shotSpeed, vy: Math.sin(angle) * player.shotSpeed,
         damage, radius: ship.weapon === 'lance' ? 0.024 : 0.014, life: ship.weapon === 'lance' ? 1.6 : 1.2,
-        color: player.color, pierce: run.mods.pierce + (ship.weapon === 'lance' ? 2 : 0), kind: 'shot', hitIds: [],
+        color: player.color, pierce: run.mods.pierce + (ship.weapon === 'lance' ? 2 : 0), ricochet: run.stats.ricochet ? 1 : 0, kind: 'shot', hitIds: [],
       });
     }
     this.addTrail(player, player.color, 2);
@@ -410,7 +416,17 @@ export class Game {
           shot.hitIds.push(enemy.id);
           this.hitEnemy(enemy, shot.damage, false);
           shot.pierce -= 1;
-          if (shot.pierce < 0) shot.life = 0;
+          if (shot.ricochet > 0) {
+            shot.ricochet -= 1;
+            const target = run.enemies.find(candidate => candidate !== enemy && !candidate.dead && !shot.hitIds.includes(candidate.id));
+            if (target) {
+              const bounce = direction(shot, target);
+              const speed = Math.hypot(shot.vx, shot.vy);
+              shot.vx = bounce.x * speed;
+              shot.vy = bounce.y * speed;
+              shot.life = Math.max(shot.life, 0.14);
+            } else if (shot.pierce < 0) shot.life = 0;
+          } else if (shot.pierce < 0) shot.life = 0;
           break;
         }
       }
@@ -448,10 +464,10 @@ export class Game {
     const run = this.run;
     enemy.dead = true;
     run.kills += 1;
-    run.stardust += enemy.reward;
+    run.stardust += enemy.reward * 0.25;
     this.audio.event('enemy');
     this.addWorldBurst(enemy, enemy.color, 15, 1.2);
-    this.dropPickup(enemy, enemy.reward > 4 ? 2 : 1);
+    this.dropPickup(enemy, enemy.reward > 4 ? 0.5 : 0.25);
     if (enemy.type === 'asteroid' && enemy.radius > 0.04) {
       for (let index = 0; index < 2; index += 1) {
         const position = this.relativePosition(enemy, index ? 0.6 : -0.6, 0.075);
@@ -640,7 +656,7 @@ export class Game {
     const boss = run.boss;
     run.boss = null;
     run.bossCleared = true;
-    run.stardust += 60 + run.sector.id * 22;
+    run.stardust += 18 + run.sector.id * 7;
     this.addWorldBurst(boss, boss.color, 80, 2.4);
     this.audio.event('boss');
     run.announcements.push({ text: 'SIGNAL SILENCED', sub: `${boss.name} yields its Stardust.`, life: 1.9, max: 1.9, color: PALETTE.gold });
@@ -680,7 +696,7 @@ export class Game {
     const run = this.run;
     if (!run || run.resultSent) return;
     run.resultSent = true;
-    const bossReward = clear ? 80 + run.sector.id * 35 : 0;
+    const bossReward = clear ? 30 + run.sector.id * 10 : 0;
     const raw = run.stardust + run.sectorReward + bossReward;
     const multiplier = 1 + run.signal * 0.25 + (clear ? run.stats.bossBonus : 0);
     const earned = Math.max(died && run.stats.recovery ? 20 : 0, Math.round(raw * multiplier));
@@ -713,12 +729,14 @@ export class Game {
   addTrail(entity, color, intensity = 1) {
     const point = this.project(entity);
     if (!point.visible) return;
-    for (let index = 0; index < intensity; index += 1) this.run.particles.push({ x: point.x, y: point.y, vx: random(-18, 18), vy: random(-18, 18), life: random(0.15, 0.42), max: 0.42, size: random(1.2, 3.3), color });
+    const count = this.run.save.settings.reducedMotion ? Math.max(1, Math.ceil(intensity * 0.4)) : intensity;
+    for (let index = 0; index < count; index += 1) this.run.particles.push({ x: point.x, y: point.y, vx: random(-18, 18), vy: random(-18, 18), life: random(0.15, 0.42), max: 0.42, size: random(1.2, 3.3), color });
   }
 
   addScreenBurst(x, y, color, count, strength) {
     if (!this.run) return;
-    for (let index = 0; index < count; index += 1) {
+    const particleCount = this.run.save.settings.reducedMotion ? Math.max(4, Math.ceil(count * 0.35)) : count;
+    for (let index = 0; index < particleCount; index += 1) {
       const angle = random(0, TAU); const speed = random(20, 110) * strength;
       this.run.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: random(0.16, 0.65), max: 0.65, size: random(1, 3.7) * strength, color });
     }
@@ -768,7 +786,8 @@ export class Game {
     ctx.fillStyle = PALETTE.ink;
     ctx.fillRect(0, 0, width, height);
     this.drawStars(ctx, width, height);
-    const shift = this.state === 'playing' || this.state === 'dying' ? this.shake * 13 * this.dpr : 0;
+    const shakeAmount = run ? run.save.settings.shake : 0.75;
+    const shift = this.state === 'playing' || this.state === 'dying' ? this.shake * shakeAmount * 13 * this.dpr : 0;
     ctx.save();
     ctx.translate(random(-shift, shift), random(-shift, shift));
     this.drawGlobe(ctx, run);

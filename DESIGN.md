@@ -90,9 +90,9 @@ Bosses appear only after an encounter banner and a two-second arrival telegraph.
 ## Economy and balance targets
 
 - Early loss, 20–45 Stardust: purchase a Core node every 1–2 runs.
-- Sector 1 boss first clear, 125 Stardust: reveal Arsenal/Navigation, offer a second power path.
-- Midgame clear, 80–140 Stardust: a ship every 4–6 successful expeditions.
-- Finale clear, 350 Stardust: unlock Eclipse and Signal challenge.
+- Sector 1 boss first clear, 140–180 Stardust: reveal Arsenal/Navigation, offer a second power path.
+- Midgame clear, 170–300 Stardust: a ship every 3–5 successful expeditions.
+- Finale clear, 350–450 Stardust: unlock Eclipse and Signal challenge.
 - Cap first-run loss at a 20 Stardust Recovery Protocol payout once bought so a bad attempt retains forward motion.
 
 Base player damage is intentionally modest. Fully upgraded Vanguard has ~2.0x effective damage and ~1.75x survivability before player skill, enough to make the meta layer decisive but not erase enemy patterns.

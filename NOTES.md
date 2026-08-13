@@ -3,8 +3,8 @@
 ## Current status
 
 - Repository initialized; research/design milestone committed (`c7eedc9`).
-- Vite/Canvas foundation, persistent save model, menu shell, keyboard/mouse/Gamepad controls, synthesized audio, and vector renderer are implemented.
-- Gameplay engine is implemented; next is controlled end-to-end content verification, bug fixes, tutorial polish, and production QA.
+- Full game implementation is complete: all four sectors, bosses, enemy families, ships, Foundry nodes, Signal levels, effects, and persistence paths are present.
+- Development verification found and fixed two real progression defects: Signal levels now take the highest unlocked tier rather than summing to 15, and Afterburner/Phase Plating are carried into new-run player state.
 
 ## Decisions
 
@@ -18,10 +18,13 @@
 ## Verification record
 
 - `npm run build` succeeds after the foundation build.
-- Development-browser smoke: title screen, launch selection, initial wave, mouse fire, WASD movement, enemy kill, damage feedback, and HUD ran with zero captured runtime errors.
+- Development-browser smoke: title screen, launch selection, first run death, Foundry purchase, reload persistence, and a 5-hull upgraded follow-up run completed with zero captured runtime errors.
+- All four boss routes produced their unique boss states and results. Every roster family, sector hazard, Flux effect, Foundry purchase, ship weapon, Signal level, reduced-motion mode, and emulated Gamepad mapping was exercised.
+- Heavy scene measurement: 150 active enemies plus 620 particles sustained 16.67 ms average / 16.8 ms worst animation-frame intervals in headless Chrome.
+- Scripted Sector 1 all-kill economy simulation yields 167 Stardust, within the documented 140–180 first-boss target.
 
 ## Next steps
 
-1. Verify every run transition, boon, boss, sector hazard, and ship through browser-driven play.
-2. Add first-run context prompts and resolve discovered interaction defects.
-3. Run the final fresh-save persistence test and production-preview adversarial pass.
+1. Rebuild the corrected production bundle.
+2. Run the final production-preview fresh-save adversarial session, including console capture and visual checks.
+3. Inspect final repository state and commit the shipping milestone.

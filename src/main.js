@@ -2,7 +2,7 @@ import './style.css';
 import { AudioSystem } from './audio.js';
 import { Game } from './game.js';
 import { Input } from './input.js';
-import { loadSave, rewardRun } from './storage.js';
+import { loadSave, persist, rewardRun } from './storage.js';
 import { UI } from './ui.js';
 
 const canvas = document.querySelector('#game');
@@ -32,6 +32,7 @@ game = new Game(canvas, input, audio, {
   onPause: () => ui.showPause(),
   onBoon: (boons, wave) => ui.showBoon(boons, wave),
   onBoonResolved: boon => ui.toast(`${boon.name} stabilized for this run.`, 'good'),
+  onTutorial: () => persist(save),
   onEnd: result => {
     const earned = rewardRun(save, result.earned, {
       died: result.died,

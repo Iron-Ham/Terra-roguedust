@@ -149,7 +149,7 @@ export function getMeta(save) {
   for (const upgrade of UPGRADES) {
     if (!save.purchases.includes(upgrade.id)) continue;
     for (const [key, value] of Object.entries(upgrade.effect)) {
-      if (typeof value === 'number') result[key] = (result[key] || 0) + value;
+      if (typeof value === 'number') result[key] = key === 'signal' ? Math.max(result[key] || 0, value) : (result[key] || 0) + value;
       else result[key] = value;
     }
   }
