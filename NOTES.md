@@ -3,8 +3,8 @@
 ## Current status
 
 - Repository initialized; research/design milestone committed (`c7eedc9`).
-- Full game implementation is complete: all four sectors, bosses, enemy families, ships, Foundry nodes, Signal levels, effects, and persistence paths are present.
-- Development verification found and fixed two real progression defects: Signal levels now take the highest unlocked tier rather than summing to 15, and Afterburner/Phase Plating are carried into new-run player state.
+- Full game implementation and production verification are complete: four sectors, bosses, enemy families, ships, Foundry nodes, Signal levels, effects, and persistence paths are shipping.
+- Production-preview fresh-state test confirmed the core death-to-Foundry loop and a persisted five-hull follow-up run with zero captured runtime errors.
 
 ## Decisions
 
@@ -22,9 +22,8 @@
 - All four boss routes produced their unique boss states and results. Every roster family, sector hazard, Flux effect, Foundry purchase, ship weapon, Signal level, reduced-motion mode, and emulated Gamepad mapping was exercised.
 - Heavy scene measurement: 150 active enemies plus 620 particles sustained 16.67 ms average / 16.8 ms worst animation-frame intervals in headless Chrome.
 - Scripted Sector 1 all-kill economy simulation yields 167 Stardust, within the documented 140–180 first-boss target.
+- Production preview (`vite preview`) fresh-save pass: no external runtime resources, title-to-run control exercise, pause/resume, immediate hull breach, 20 Stardust recovery, Hull I purchase, reload, and a 5-max-hull follow-up run all passed with no captured runtime errors.
 
 ## Next steps
 
-1. Rebuild the corrected production bundle.
-2. Run the final production-preview fresh-save adversarial session, including console capture and visual checks.
-3. Inspect final repository state and commit the shipping milestone.
+1. Shipping milestone committed.

@@ -36,5 +36,5 @@
 - [x] Add visual effects, screen feedback, audio feedback, and reduced-motion support.
 - [x] Exercise a first-run death -> purchase -> reload -> stronger-run path.
 - [x] Exercise all unlocks, ships, sectors, bosses, boons, pause, reset, and controller code paths.
-- [ ] Run production build and Vite preview with console-error checks.
-- [ ] Review diff/status and commit finished game.
+- [x] Run production build and Vite preview with console-error checks.
+- [x] Review diff/status and commit finished game.
