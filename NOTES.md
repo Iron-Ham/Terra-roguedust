@@ -9,6 +9,7 @@
 - Globe traversal has no polar clamp: player, bullets, pickups, and enemies keep travelling across the sphere rather than sticking to an artificial latitude boundary.
 - Player traversal now follows a camera-relative tangent frame that is parallel-transported over the sphere. Movement distance is latitude-invariant, aim remains screen-relative, and the surface grid is projected from that moving frame.
 - Player-shot lifetime now decrements after its spherical movement step. Normal, lance, Nova, and hostile shots expire at their authored durations instead of orbiting indefinitely.
+- Dash is a base movement tool. Afterburner Tuning now reduces its 1.15-second recharge by 25%; the HUD correctly begins at READY. Resolving a Flux immediately clears its selection overlay before play resumes.
 
 ## Decisions
 
@@ -31,6 +32,7 @@
 - Traversal regression: a player starting at latitude 1.56 and holding Up crossed the former polar limit to latitude 2.14; an upward projectile advanced from 1.43 to 1.76. Development combat smoke and the production preview completed with no captured runtime errors.
 - Perspective regression: fixed-step diagonal movement traveled 0.3478965 radians at the equator and at latitude 1.5 (difference 3.22e-15). A fixed world marker shifted beneath the centered ship; up/right shots remained respectively above/right of the ship near a pole.
 - Projectile regression: before the fix a 1.2-second player shot remained alive after 1.5 seconds. Afterward, normal (1.2 s), lance (1.6 s), Nova (0.7 s), and hostile (4 s) shots all expired after their limits with no captured runtime errors.
+- Feedback regression: a fresh run now begins with Dash READY, returns to READY after its 1.15-second recharge, and Afterburner Tuning reduces that cooldown to 0.8625 seconds. Clicking a Flux card now clears the overlay, records the boon, and returns to playing with no captured runtime errors.
 
 ## Next steps
 

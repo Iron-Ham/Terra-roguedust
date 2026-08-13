@@ -54,7 +54,7 @@ export const UPGRADES = [
   { id: 'hull1', branch: 'CORE SYSTEMS', title: 'Reinforced Hull I', desc: '+1 maximum hull.', cost: 20, visible: () => true, effect: { maxHull: 1 } },
   { id: 'thruster1', branch: 'CORE SYSTEMS', title: 'Ion Thrusters I', desc: '+7% traversal speed.', cost: 35, visible: () => true, effect: { speed: 0.07 } },
   { id: 'magnet1', branch: 'CORE SYSTEMS', title: 'Dust Magnet I', desc: 'Collect salvage from farther away.', cost: 45, visible: () => true, effect: { magnet: 0.35 } },
-  { id: 'afterburner', branch: 'CORE SYSTEMS', title: 'Afterburner', desc: 'Unlock dash. Shift / LT / B.', cost: 70, visible: () => true, effect: { dash: true } },
+  { id: 'afterburner', branch: 'CORE SYSTEMS', title: 'Afterburner Tuning', desc: 'Dash recharges 25% faster.', cost: 70, visible: () => true, effect: { dashRecharge: 0.25 } },
   { id: 'hull2', branch: 'CORE SYSTEMS', title: 'Reinforced Hull II', desc: '+1 maximum hull.', cost: 90, requires: ['hull1'], visible: () => true, effect: { maxHull: 1 } },
   { id: 'phase', branch: 'CORE SYSTEMS', title: 'Phase Plating', desc: 'Dash grants a longer safe window.', cost: 130, requires: ['afterburner'], visible: () => true, effect: { phase: true } },
   { id: 'thruster2', branch: 'CORE SYSTEMS', title: 'Ion Thrusters II', desc: '+7% traversal speed.', cost: 140, requires: ['thruster1'], visible: () => true, effect: { speed: 0.07 } },
@@ -145,7 +145,7 @@ export const WAVE_RECIPES = [
 ];
 
 export function getMeta(save) {
-  const result = { maxHull: 0, speed: 0, magnet: 0, damage: 0, dash: false, phase: false, split: false, ricochet: false, nova: false, bossBonus: 0, recovery: false, signal: 0 };
+  const result = { maxHull: 0, speed: 0, magnet: 0, damage: 0, dash: true, dashRecharge: 0, phase: false, split: false, ricochet: false, nova: false, bossBonus: 0, recovery: false, signal: 0 };
   for (const upgrade of UPGRADES) {
     if (!save.purchases.includes(upgrade.id)) continue;
     for (const [key, value] of Object.entries(upgrade.effect)) {

@@ -169,7 +169,8 @@ function playerStats(save, ship) {
     damage: ship.damage * (1 + meta.damage),
     shotSpeed: ship.shotSpeed,
     magnet: ship.magnet + meta.magnet,
-    dash: meta.dash,
+    dash: true,
+    dashRecharge: meta.dashRecharge,
     phase: meta.phase,
     split: meta.split,
     ricochet: meta.ricochet,
@@ -228,7 +229,7 @@ export class Game {
     const player = {
       lon: 0, lat: 0, hull: stats.maxHull, maxHull: stats.maxHull, speed: stats.speed,
       fireRate: stats.fireRate, damage: stats.damage, shotSpeed: stats.shotSpeed, magnet: stats.magnet,
-      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2, cameraRight: [1, 0, 0], dash: stats.dash, phase: stats.phase,
+      radius: ship.radius, color: ship.color, ship, angle: -Math.PI / 2, cameraRight: [1, 0, 0], dash: stats.dash, dashRecharge: stats.dashRecharge, phase: stats.phase,
       fireCooldown: 0, dashCooldown: 0, dashTime: 0, invulnerable: 0, hitFlash: 0,
       velocity: { x: 0, y: 0 }, charge: 0,
     };
@@ -512,7 +513,7 @@ export class Game {
   dash() {
     const run = this.run;
     const player = run.player;
-    player.dashCooldown = 1.15;
+    player.dashCooldown = 1.15 * (1 - player.dashRecharge);
     player.dashTime = 0.18;
     player.invulnerable = player.phase ? 0.42 : 0.24;
     this.shake = Math.max(this.shake, 0.24);
@@ -883,7 +884,7 @@ export class Game {
     return {
       sector: run.sector.name, wave: run.boss ? 'BOSS' : `${run.wave || 1} / 6`,
       hull: run.player.hull, maxHull: run.player.maxHull, dust: Math.floor(run.stardust + run.sectorReward),
-      dash: run.player.dashCooldown <= 0 && run.stats.dash, boons: (run.boons || []).length,
+      dash: run.player.dashCooldown <= 0 && run.player.dash, boons: (run.boons || []).length,
       boss: run.boss ? { name: run.boss.name, hp: Math.max(0, run.boss.hp), max: run.boss.maxHp } : null,
       signal: run.signal,
     };

@@ -28,7 +28,7 @@ The game also adopts Rogue Legacy's compact-content principle: a few authored en
 | Dash | Shift / right mouse | LT / B |
 | Pause | Escape | Start |
 
-The world is modelled as longitude/latitude on a sphere. The camera is fixed over the current latitude/longitude: all entities travel along the surface, foreground objects scale up, far-side objects fade and cannot hit. This preserves the iconic globe while keeping targeting legible.
+The world is modelled as longitude/latitude on a sphere, but the player never manages those global axes. A camera-relative tangent frame travels with the ship: movement and aim preserve their screen direction at every point, while the projected surface, bullets, enemies, and pickups move beneath it. Foreground objects scale up, far-side objects fade and cannot hit. This preserves the iconic globe while keeping targeting legible.
 
 ## Run structure
 
@@ -48,7 +48,7 @@ One currency keeps the loop clear. `Stardust` is collected in-run, retained on d
 
 | Branch | Role and unlock cadence | Upgrades |
 | --- | --- | --- |
-| Core systems | Visible at start; makes the first deaths less punishing | Reinforced Hull I–III (+1 max hull each), Ion Thrusters I–II (+7% move), Dust Magnet I–II, Afterburner (dash unlock), Phase Plating (dash invulnerability) |
+| Core systems | Visible at start; makes the first deaths less punishing | Reinforced Hull I–III (+1 max hull each), Ion Thrusters I–II (+7% move), Dust Magnet I–II, Afterburner Tuning (-25% dash recharge), Phase Plating (dash invulnerability) |
 | Arsenal | Revealed by first boss clear; changes offensive feel | Plasma Focus I–III (+12% damage), Split Payload (shot fragments), Ricochet Lens (+1 bounce), Nova Capacitor (charged radial burst) |
 | Navigation | Revealed by spending 250 Stardust; opens route variety | Sector 2 licence, Sector 3 licence, Sector 4 licence, Cartographer (+boss bonus), Recovery Protocol (+minimum death payout) |
 | Fleet | Revealed after Sector 2 clear; meaningful ship archetypes | unlocks Comet, Bastion, Wisp, and Eclipse ships |
