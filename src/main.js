@@ -10,7 +10,7 @@ const overlay = document.querySelector('#overlay');
 const hud = document.querySelector('#hud');
 const toast = document.querySelector('#toast');
 
-let save = loadSave();
+let save = await loadSave();
 const audio = new AudioSystem(() => save.settings);
 const input = new Input(canvas);
 let game;
@@ -52,6 +52,12 @@ ui.setHooks({
 });
 
 ui.showHome();
+
+window.addEventListener('roguedust-storage', event => {
+  if (event.detail.status === 'error') {
+    ui.toast(event.detail.message || 'Notion sync failed. Progress remains cached on this device.', 'warning');
+  }
+});
 
 window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 window.addEventListener('keydown', event => {

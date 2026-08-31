@@ -1,6 +1,10 @@
 import { SAVE_VERSION, SHIPS, UPGRADES } from './data.js';
 
 const KEY = 'super-roguedust-save-v3';
+const REMOTE_ENDPOINT = '/api/save';
+const remoteToken = typeof location === 'undefined' ? null : new URLSearchParams(location.hash.slice(1)).get('saveToken');
+let remoteRevision = 0;
+let remoteQueue = Promise.resolve();
 
 export function freshSave() {
   return {
@@ -16,41 +20,44 @@ export function freshSave() {
   };
 }
 
-function validSave(candidate) {
-  if (!candidate || typeof candidate !== 'object') return false;
-  if (!Number.isFinite(candidate.dust) || !Array.isArray(candidate.purchases)) return false;
-  return true;
+export function persistenceMode() {
+  return remoteToken ? 'notion' : 'local';
 }
 
-export function loadSave() {
+export async function loadSave() {
+  const localSave = loadLocalSave();
+  if (!remoteToken) return localSave;
+
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return freshSave();
-    const parsed = JSON.parse(raw);
-    if (!validSave(parsed)) return freshSave();
-    const base = freshSave();
-    const save = {
-      ...base,
-      ...parsed,
-      unlocked: { ...base.unlocked, ...parsed.unlocked },
-      stats: { ...base.stats, ...parsed.stats },
-      settings: { ...base.settings, ...parsed.settings },
-      seen: { ...base.seen, ...parsed.seen },
-    };
-    save.version = SAVE_VERSION;
-    save.dust = Math.max(0, Math.floor(save.dust));
-    save.purchases = save.purchases.filter(id => UPGRADES.some(upgrade => upgrade.id === id));
-    save.ships = [...new Set(save.ships.filter(id => SHIPS[id]))];
-    if (!save.ships.includes('vanguard')) save.ships.unshift('vanguard');
-    if (!SHIPS[save.selectedShip] || !save.ships.includes(save.selectedShip)) save.selectedShip = 'vanguard';
-    return save;
-  } catch {
-    return freshSave();
+    const response = await requestRemote('GET');
+    if (response.status === 404) {
+      await writeRemote(localSave);
+      emitStorageStatus('synced');
+      return localSave;
+    }
+    if (!response.ok) throw new Error(`Remote load failed (${response.status})`);
+
+    const payload = await response.json();
+    const remoteSave = normalizeSave(payload.state);
+    remoteRevision = Number.isInteger(payload.revision) ? payload.revision : 0;
+    writeLocalSave(remoteSave);
+    emitStorageStatus('synced');
+    return remoteSave;
+  } catch (error) {
+    emitStorageStatus('error', error);
+    return localSave;
   }
 }
 
 export function persist(save) {
-  localStorage.setItem(KEY, JSON.stringify(save));
+  const snapshot = normalizeSave(structuredClone(save));
+  writeLocalSave(snapshot);
+  if (!remoteToken) return;
+
+  remoteQueue = remoteQueue
+    .then(() => writeRemote(snapshot))
+    .then(() => emitStorageStatus('synced'))
+    .catch(error => emitStorageStatus('error', error));
 }
 
 export function buyUpgrade(save, id) {
@@ -101,6 +108,70 @@ export function resetSave() {
   const save = freshSave();
   persist(save);
   return save;
+}
+
+export function normalizeSave(candidate) {
+  if (!candidate || typeof candidate !== 'object') return freshSave();
+  if (!Number.isFinite(candidate.dust) || !Array.isArray(candidate.purchases)) return freshSave();
+
+  const base = freshSave();
+  const save = {
+    ...base,
+    ...candidate,
+    unlocked: { ...base.unlocked, ...candidate.unlocked },
+    stats: { ...base.stats, ...candidate.stats },
+    settings: { ...base.settings, ...candidate.settings },
+    seen: { ...base.seen, ...candidate.seen },
+  };
+  save.version = SAVE_VERSION;
+  save.dust = Math.max(0, Math.floor(save.dust));
+  save.purchases = save.purchases.filter(id => UPGRADES.some(upgrade => upgrade.id === id));
+  save.ships = [...new Set((Array.isArray(save.ships) ? save.ships : []).filter(id => SHIPS[id]))];
+  if (!save.ships.includes('vanguard')) save.ships.unshift('vanguard');
+  if (!SHIPS[save.selectedShip] || !save.ships.includes(save.selectedShip)) save.selectedShip = 'vanguard';
+  return save;
+}
+
+function loadLocalSave() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? normalizeSave(JSON.parse(raw)) : freshSave();
+  } catch (error) {
+    console.warn('Could not load the local save cache.', error);
+    return freshSave();
+  }
+}
+
+function writeLocalSave(save) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(save));
+  } catch (error) {
+    emitStorageStatus('error', error);
+  }
+}
+
+async function writeRemote(save) {
+  const response = await requestRemote('PUT', { state: save, baseRevision: remoteRevision });
+  if (response.status === 409) throw new Error('This save changed in another session. Reload before continuing.');
+  if (!response.ok) throw new Error(`Remote save failed (${response.status})`);
+  const payload = await response.json();
+  remoteRevision = payload.revision;
+}
+
+function requestRemote(method, body) {
+  return fetch(REMOTE_ENDPOINT, {
+    method,
+    headers: {
+      Authorization: `Save ${remoteToken}`,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+}
+
+function emitStorageStatus(status, error) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('roguedust-storage', { detail: { status, message: error?.message } }));
 }
 
 export { KEY as SAVE_KEY };
