@@ -1,5 +1,5 @@
 import { BOONS, PALETTE, SECTORS, SHIPS, UPGRADES, getMeta, revealState } from './data.js';
-import { buyUpgrade, persist, resetSave, selectShip } from './storage.js';
+import { buyUpgrade, persistenceMode, persist, resetSave, selectShip } from './storage.js';
 
 const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
 const format = value => Math.floor(value).toLocaleString();
@@ -159,6 +159,7 @@ export class UI {
   showSettings() {
     this.screen = 'settings';
     const settings = this.save.settings;
+    const notionSync = persistenceMode() === 'notion';
     this.shell('SETTINGS', `
       <header class="screen-heading"><div><div class="eyebrow">SHIPBOARD CALIBRATION</div><h2>TUNE THE SIGNAL</h2></div></header>
       <div class="settings-form">
@@ -167,7 +168,7 @@ export class UI {
         <label><span>SCREEN SHAKE <b>${Math.round(settings.shake * 100)}%</b></span><input data-setting="shake" type="range" min="0" max="1" step="0.05" value="${settings.shake}"></label>
         <label class="toggle-row"><span>REDUCED MOTION <small>Less shake and fewer visual fragments.</small></span><input data-setting="reducedMotion" type="checkbox" ${settings.reducedMotion ? 'checked' : ''}></label>
       </div>
-      <div class="settings-footer"><p>Progress is stored locally in this browser. There is no network service and no account.</p><button class="button danger" data-action="reset">ERASE LOCAL SAVE</button></div>
+      <div class="settings-footer"><p>${notionSync ? 'Progress syncs to the private Notion save database and remains cached on this device.' : 'Progress is stored locally in this browser. Add a save capability to enable Notion sync.'}</p><button class="button danger" data-action="reset">ERASE ${notionSync ? 'SYNCED' : 'LOCAL'} SAVE</button></div>
     `);
   }
 
@@ -252,10 +253,10 @@ export class UI {
 
   confirmReset() {
     if (this.resetArmed) {
-      const save = resetSave(); this.setSave(save); this.resetArmed = false; this.toast('Local save erased. Fresh signal initialized.', 'warning'); this.showHome(); return;
+      const save = resetSave(); this.setSave(save); this.resetArmed = false; this.toast('Save erased. Fresh signal initialized.', 'warning'); this.showHome(); return;
     }
     this.resetArmed = true;
-    this.toast('Click ERASE LOCAL SAVE again to confirm.', 'warning');
+    this.toast('Click ERASE SAVE again to confirm.', 'warning');
     setTimeout(() => { this.resetArmed = false; }, 3500);
   }
 }
